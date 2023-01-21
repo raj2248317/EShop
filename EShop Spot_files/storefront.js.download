@@ -1,0 +1,82 @@
+
+	
+function PaytmPayment(){
+	this.id = 'paytm';
+	this.id_test = 'paytm-dev';
+	this.paytmBaseAssetUrl = 'https://pay.sellonboard.com/lib/assets/images/';
+	
+	this.getPaymentContainer = function(label){
+		var container = label.getElementsByClassName('sellonboard_payment_methods');
+		if (container.length === 0) {
+			container = [document.createElement('div')];
+			container[0].className += 'sellonboard_payment_methods';
+			container[0].setAttribute('style','display:flex;width:100%;padding-left:18px');
+			label.getElementsByClassName('ec-radiogroup__info')[0].appendChild(container[0]);
+		}
+		  return container[0];
+	}
+	
+	this.getPaymentSelection = function(label) {
+		var container = label.getElementsByClassName('sellonboard_payment_list');
+		if (container.length === 0) {
+			container = [document.createElement('div')];
+			container[0].className += 'sellonboard_payment_list';
+			container[0].setAttribute('style','display:none;width:100%;');
+			label.getElementsByClassName('ec-radiogroup__info')[0].appendChild(container[0]);
+		}
+		  return container[0];
+	}	
+	
+	
+	this.updatePaymentArea = function() {
+		let optionsContainers = document.getElementsByClassName('ec-radiogroup__item--app_id-'+this.id);
+		if (optionsContainers.length == 0) {
+			optionsContainers = document.getElementsByClassName('ec-radiogroup__item--app_id-'+this.id_test);
+		}
+		let payment_method_api = 'https://license.sellonboard.com/data/paytm/'+ecwidStoreID+'/public.json?t='+Date.now();
+		console.log(payment_method_api);
+		if (optionsContainers.length > 0) {
+			let container = this.getPaymentContainer(optionsContainers[0]);
+			let paymentE = this.getPaymentSelection(optionsContainers[0]);
+			
+			if (
+				container
+			){
+				fetch(payment_method_api , {
+					method: 'get'
+				})
+				.then((response) => {
+					return response.json()
+				})
+				.then((jsonData) => {	
+					
+					setTimeout(function(){
+						let htmlIcon = '';
+						for (let i=0; i<jsonData.payment_method.length; i++) {
+							let payVal = jsonData.payment_method[i];
+							let img_src = this.paytmBaseAssetUrl + payVal.value + '.svg';
+							if(payVal.checked==1){
+								htmlIcon += '<img src="'+img_src+'" class="ecwid-PaymentMethodsBlockSvgCustom" style="display: inline-block; height:34px;width:50px;" alt="'+payVal.name+'" title="'+payVal.name+'">';
+							}												
+						}
+						container.innerHTML = htmlIcon;
+						
+					},500);
+										
+				});
+			}
+		}
+	};
+	return this;
+}
+
+
+
+// Execute the code after the necessary page has loaded
+// PaytmPayment().updatePaymentArea();		
+Ecwid.OnPageLoaded.add(function(page){
+	if(page.type == "CHECKOUT_PAYMENT_DETAILS"){		
+		let Paytm = PaytmPayment();
+		Paytm.updatePaymentArea();		
+	}
+});

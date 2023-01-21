@@ -1,0 +1,96 @@
+(function(w) {
+	if (!Object.assign) {
+		objectsAssignPolyfill();
+	}
+
+	var oAuthAppId = "storefront-label-editor"
+
+	var langCodesToAdaptForRosetta = {
+        ar: "ar_SA",
+        es: "es_ES",
+        es_419: "es_MX",
+        hy: "hy_AM",
+        pt: "pt_PT",
+        sv: "sv_SE",
+        zh: "zh_CN"
+    };
+	
+	var publicConfig = Ecwid.getAppPublicConfig(oAuthAppId);
+	if (!publicConfig) {
+		return;
+	}
+
+	var translates = JSON.parse(decodeURIComponent(publicConfig));
+	var langs = Object.keys(translates);
+
+	if (langs.length === 0) {
+		return;
+	}
+
+	Ecwid.OnAPILoaded.add(function() {
+		var currentLang = Ecwid.getStorefrontLang() || langs[0] || 'en';
+		newEcwidMessages = escapeHtml(translates[getRosettaLangCode(currentLang)]);
+		if (w.ecwidMessages) {
+			w.ecwidMessages = Object.assign(w.ecwidMessages, newEcwidMessages);
+		} else {
+			w.ecwidMessages = Object.assign({}, newEcwidMessages);
+		}
+	});
+
+	function escapeHtml(messages) {
+		var enabledHtmlTags = '["<br>","<br />","<br/>","<b>","</b>","<span ","<span>", "</span>","<a ","<a>","</a>"]';
+		if (enabledHtmlTags != '') {
+			var enabledHtmlTagsList = JSON.parse(enabledHtmlTags);
+		} else {
+			var enabledHtmlTagsList = [];
+		}
+		for (var key in messages) {
+			messages[key] = messages[key].replace("<", "&lt;");
+			enabledHtmlTagsList.forEach(element =>
+				messages[key] = messages[key].replace(element.replace("<", "&lt;"), element)
+			);
+		}
+		return messages;
+	}
+
+   function objectsAssignPolyfill() {
+			Object.defineProperty(Object, 'assign', {
+				enumerable: false,
+				configurable: true,
+				writable: true,
+				value: function (target) {
+
+					'use strict';
+					if (target === undefined || target === null) {
+						throw new TypeError('Cannot convert first argument to object');
+					}
+
+					var to = Object(target);
+					for (var i = 1; i < arguments.length; i++) {
+						var nextSource = arguments[i];
+						if (nextSource === undefined || nextSource === null) {
+							continue;
+						}
+						nextSource = Object(nextSource);
+
+						var keysArray = Object.keys(nextSource);
+						for (var nextIndex = 0, len = keysArray.length; nextIndex < len; nextIndex++) {
+							var nextKey = keysArray[nextIndex];
+							var desc = Object.getOwnPropertyDescriptor(nextSource, nextKey);
+							if (desc !== undefined && desc.enumerable) {
+								to[nextKey] = nextSource[nextKey];
+							}
+						}
+					}
+					return to;
+				}
+			});
+	}
+
+	function getRosettaLangCode(langCode) {
+		if (!!langCodesToAdaptForRosetta[langCode]) {
+			return langCodesToAdaptForRosetta[langCode];
+		}
+		return langCode;
+	}
+})(window)
